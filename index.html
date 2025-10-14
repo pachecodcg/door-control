@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Door Status Control</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #002f55 0%, #00213d 50%, #001a2e 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            border-radius: 28px;
+            box-shadow: 0 30px 90px rgba(0, 0, 0, 0.5);
+            padding: 48px;
+            max-width: 580px;
+            width: 100%;
+            animation: fadeIn 0.6s ease;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 36px;
+        }
+        
+        h1 {
+            color: #002f55;
+            font-size: 1.75em;
+            font-weight: 600;
+            margin-bottom: 6px;
+            letter-spacing: -0.5px;
+        }
+        
+        .subtitle {
+            color: #64A0C8;
+            font-size: 0.9em;
+            font-weight: 400;
+            opacity: 0.85;
+        }
+        
+        .status-display {
+            background: linear-gradient(135deg, rgba(0, 47, 85, 0.04) 0%, rgba(100, 160, 200, 0.08) 100%);
+            border-radius: 18px;
+            padding: 28px;
+            margin-bottom: 36px;
+            text-align: center;
+            border: 1px solid rgba(0, 47, 85, 0.08);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .status-badge {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #44D62C;
+            box-shadow: 0 0 0 3px rgba(68, 214, 44, 0.2);
+            animation: pulse 2s infinite ease-in-out;
+        }
+        
+        .current-status {
+            font-size: 1.4em;
+            font-weight: 600;
+            color: #002f55;
+            margin-bottom: 8px;
+            letter-spacing: -0.3px;
+        }
+        
+        .current-message {
+            color: #64A0C8;
+            font-size: 0.95em;
+            margin-bottom: 12px;
+            font-weight: 400;
+        }
+        
+        .last-update {
+            font-size: 0.75em;
+            color: #A5ACAF;
+            font-style: italic;
+        }
+        
+        .button-section {
+            margin-bottom: 28px;
+        }
+        
+        .section-label {
+            font-size: 0.75em;
+            font-weight: 600;
+            color: #A5ACAF;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 14px;
+            padding-left: 2px;
+        }
+        
+        .button-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .button-grid-single {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+        
+        .status-button {
+            padding: 22px 18px;
+            border: 1.5px solid transparent;
+            border-radius: 14px;
+            font-size: 0.95em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            letter-spacing: 0.2px;
+        }
+        
+        .status-button:hover {
+            transform: translateY(-3px) scale(1.01);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+        }
+        
+        .status-button:active {
+            transform: translateY(-1px) scale(0.98);
+        }
+        
+        /* Ripple effect */
+        .status-button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        
+        .status-button:active::after {
+            width: 300px;
+            height: 300px;
+        }
+        
+        .status-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.15);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .status-button:hover::before {
+            opacity: 1;
+        }
+        
+        .emoji {
+            font-size: 1.3em;
+            margin-right: 6px;
+            display: inline-block;
+            opacity: 0.9;
+        }
+        
+        /* Available - Soft Green */
+        .btn-available {
+            background: linear-gradient(135deg, rgba(68, 214, 44, 0.12), rgba(56, 176, 35, 0.16));
+            color: #2d8a21;
+            border-color: rgba(68, 214, 44, 0.25);
+        }
+        
+        .btn-available:hover {
+            background: linear-gradient(135deg, rgba(68, 214, 44, 0.18), rgba(56, 176, 35, 0.22));
+            border-color: rgba(68, 214, 44, 0.35);
+        }
+        
+        /* ALL Busy Buttons - SAME Augusta Blue */
+        .btn-busy,
+        .btn-meeting,
+        .btn-brb,
+        .btn-lunch,
+        .btn-dnd {
+            background: linear-gradient(135deg, rgba(0, 47, 85, 0.14), rgba(0, 47, 85, 0.18));
+            color: #002f55;
+            border-color: rgba(0, 47, 85, 0.22);
+        }
+        
+        .btn-busy:hover,
+        .btn-meeting:hover,
+        .btn-brb:hover,
+        .btn-lunch:hover,
+        .btn-dnd:hover {
+            background: linear-gradient(135deg, rgba(0, 47, 85, 0.20), rgba(0, 47, 85, 0.24));
+            border-color: rgba(0, 47, 85, 0.32);
+        }
+        
+        /* Out of Office - Soft Grey */
+        .btn-away {
+            background: linear-gradient(135deg, rgba(165, 172, 175, 0.14), rgba(138, 145, 149, 0.18));
+            color: #5a6266;
+            border-color: rgba(165, 172, 175, 0.28);
+        }
+        
+        .btn-away:hover {
+            background: linear-gradient(135deg, rgba(165, 172, 175, 0.20), rgba(138, 145, 149, 0.24));
+            border-color: rgba(165, 172, 175, 0.38);
+        }
+        
+        .custom-section {
+            margin-top: 32px;
+            padding: 26px;
+            background: rgba(0, 47, 85, 0.03);
+            border-radius: 18px;
+            border: 1.5px dashed rgba(0, 47, 85, 0.12);
+        }
+        
+        .custom-section h3 {
+            font-size: 0.95em;
+            font-weight: 600;
+            color: #002f55;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            letter-spacing: -0.2px;
+        }
+        
+        .custom-section h3 .emoji {
+            margin-right: 8px;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1.5px solid rgba(0, 47, 85, 0.12);
+            border-radius: 12px;
+            font-size: 0.92em;
+            margin-bottom: 12px;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            background: rgba(255, 255, 255, 0.8);
+            color: #002f55;
+        }
+        
+        input[type="text"]:focus {
+            outline: none;
+            border-color: rgba(100, 160, 200, 0.5);
+            background: rgba(255, 255, 255, 1);
+            box-shadow: 0 0 0 4px rgba(100, 160, 200, 0.08);
+        }
+        
+        input[type="text"]::placeholder {
+            color: #A5ACAF;
+            opacity: 0.7;
+        }
+        
+        .btn-custom {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, rgba(0, 47, 85, 0.14), rgba(0, 61, 110, 0.18));
+            color: #002f55;
+            border: 1.5px solid rgba(0, 47, 85, 0.22);
+            border-radius: 12px;
+            font-size: 0.95em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            letter-spacing: 0.2px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-custom:hover {
+            transform: translateY(-2px);
+            background: linear-gradient(135deg, rgba(0, 47, 85, 0.20), rgba(0, 61, 110, 0.24));
+            border-color: rgba(0, 47, 85, 0.32);
+            box-shadow: 0 8px 24px rgba(0, 47, 85, 0.15);
+        }
+        
+        .btn-custom:active {
+            transform: translateY(0);
+        }
+        
+        .connection-status {
+            text-align: center;
+            margin-top: 28px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            letter-spacing: 0.3px;
+        }
+        
+        .connected {
+            background: rgba(68, 214, 44, 0.08);
+            color: #2d8a21;
+            border: 1.5px solid rgba(68, 214, 44, 0.2);
+        }
+        
+        .disconnected {
+            background: rgba(220, 53, 69, 0.08);
+            color: #a71d2a;
+            border: 1.5px solid rgba(220, 53, 69, 0.2);
+        }
+        
+        .status-indicator {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+            animation: pulse 2s infinite ease-in-out;
+        }
+        
+        .connected .status-indicator {
+            background: #2d8a21;
+        }
+        
+        .disconnected .status-indicator {
+            background: #a71d2a;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.6;
+                transform: scale(0.95);
+            }
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 36px;
+            padding-top: 28px;
+            border-top: 1.5px solid rgba(0, 47, 85, 0.08);
+            color: #A5ACAF;
+            font-size: 0.8em;
+            letter-spacing: 0.5px;
+        }
+        
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: rgba(0, 47, 85, 0.95);
+            color: white;
+            padding: 16px 24px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            font-size: 0.9em;
+            font-weight: 500;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: none;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+        
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .toast-icon {
+            margin-right: 8px;
+            font-size: 1.2em;
+        }
+        
+        /* Quick Actions Hint */
+        .quick-hint {
+            text-align: center;
+            margin-top: 20px;
+            padding: 12px;
+            background: rgba(100, 160, 200, 0.06);
+            border-radius: 10px;
+            font-size: 0.8em;
+            color: #64A0C8;
+            border: 1px solid rgba(100, 160, 200, 0.12);
+        }
+        
+        .quick-hint-icon {
+            margin-right: 6px;
+            opacity: 0.8;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 36px 28px;
+                border-radius: 24px;
+            }
+            
+            h1 {
+                font-size: 1.5em;
+            }
+            
+            .button-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .status-button {
+                padding: 20px 16px;
+            }
+            
+            .toast {
+                bottom: 20px;
+                right: 20px;
+                left: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Door Status Control</h1>
+            <p class="subtitle">Manage your office availability</p>
+        </div>
+        
+        <div class="status-display">
+            <div class="status-badge"></div>
+            <div class="current-status" id="currentStatus">Loading...</div>
+            <div class="current-message" id="currentMessage"></div>
+            <div class="last-update" id="lastUpdate"></div>
+        </div>
+        
+        <!-- Available Section -->
+        <div class="button-section">
+            <div class="section-label">Available</div>
+            <div class="button-grid-single">
+                <button class="status-button btn-available" onclick="setStatus('available', 'Come on in!')">
+                    <span class="emoji">☕️</span> Available
+                </button>
+            </div>
+        </div>
+        
+        <!-- Busy Section -->
+        <div class="button-section">
+            <div class="section-label">Busy</div>
+            <div class="button-grid">
+                <button class="status-button btn-busy" onclick="setStatus('busy', 'Working on something')">
+                    <span class="emoji">🧠</span> Busy
+                </button>
+                <button class="status-button btn-meeting" onclick="setStatus('meeting', 'Do not disturb')">
+                    <span class="emoji">📅</span> In a Meeting
+                </button>
+                <button class="status-button btn-brb" onclick="setStatus('brb', 'Give me a few minutes')">
+                    <span class="emoji">🕐</span> Be Right Back
+                </button>
+                <button class="status-button btn-lunch" onclick="setStatus('lunch', 'Out for lunch')">
+                    <span class="emoji">🍽</span> Lunch
+                </button>
+            </div>
+            <div class="button-grid-single">
+                <button class="status-button btn-dnd" onclick="setStatus('do-not-disturb', 'Please do not disturb')">
+                    <span class="emoji">🛑</span> Do Not Disturb
+                </button>
+            </div>
+        </div>
+        
+        <!-- Away Section -->
+        <div class="button-section">
+            <div class="section-label">Away</div>
+            <div class="button-grid-single">
+                <button class="status-button btn-away" onclick="setStatus('away', 'Out of office')">
+                    <span class="emoji">✈️</span> Out of Office
+                </button>
+            </div>
+        </div>
+        
+        <!-- Custom Message Section -->
+        <div class="custom-section">
+            <h3><span class="emoji">✏️</span> Custom Message</h3>
+            <input type="text" id="customStatus" placeholder="Status (e.g., 'Coffee Break')" maxlength="30">
+            <input type="text" id="customMessage" placeholder="Message (optional)" maxlength="50">
+            <button class="btn-custom" onclick="setCustomStatus()">Set Custom Status</button>
+        </div>
+        
+        <div class="quick-hint">
+            <span class="quick-hint-icon">💡</span> Tip: Status updates appear on your door display in real-time
+        </div>
+        
+        <div class="connection-status disconnected" id="connectionStatus">
+            <span class="status-indicator"></span>Connecting to Firebase...
+        </div>
+        
+        <div class="footer">
+            Powered by Firebase • Augusta University
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+        <span class="toast-icon">✓</span>
+        <span id="toastMessage">Status updated!</span>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        // Import Firebase modules
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getDatabase, ref, set, onValue } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+        // YOUR Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBEdywe61bhGFl05gQYo8vc7DAICnXf104",
+            authDomain: "door-display-52f97.firebaseapp.com",
+            databaseURL: "https://door-display-52f97-default-rtdb.firebaseio.com",
+            projectId: "door-display-52f97",
+            storageBucket: "door-display-52f97.firebasestorage.app",
+            messagingSenderId: "915024442849",
+            appId: "1:915024442849:web:e6d7ced8e095b97b7b0ea0"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+        
+        // Reference to door1 display
+        const displayRef = ref(database, 'displays/door1');
+        
+        // Update connection status
+        document.getElementById('connectionStatus').innerHTML = '<span class="status-indicator"></span>Connected to Firebase';
+        document.getElementById('connectionStatus').className = 'connection-status connected';
+        
+        // Toast notification function
+        function showToast(message, icon = '✓') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            const toastIcon = toast.querySelector('.toast-icon');
+            
+            toastIcon.textContent = icon;
+            toastMessage.textContent = message;
+            
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+        
+        // Listen for real-time updates
+        onValue(displayRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                // Update status display
+                let statusText = data.status || 'Unknown';
+                statusText = statusText.charAt(0).toUpperCase() + statusText.slice(1).replace(/-/g, ' ');
+                
+                document.getElementById('currentStatus').textContent = statusText;
+                document.getElementById('currentMessage').textContent = data.message || '';
+                
+                const lastUpdate = data.lastUpdate || 0;
+                if (lastUpdate > 0) {
+                    const date = new Date(lastUpdate);
+                    document.getElementById('lastUpdate').textContent = 
+                        `Updated ${date.toLocaleTimeString()}`;
+                }
+            }
+        });
+        
+        // Make functions globally available
+        window.setStatus = function(status, message) {
+            set(displayRef, {
+                status: status,
+                message: message,
+                lastUpdate: Date.now()
+            }).then(() => {
+                console.log('✓ Status updated:', status);
+                let displayStatus = status.charAt(0).toUpperCase() + status.slice(1).replace(/-/g, ' ');
+                showToast(`Status set to ${displayStatus}`, '✓');
+            }).catch((error) => {
+                console.error('✗ Error updating status:', error);
+                showToast('Failed to update status', '✗');
+            });
+        };
+        
+        window.setCustomStatus = function() {
+            const status = document.getElementById('customStatus').value.trim();
+            const message = document.getElementById('customMessage').value.trim();
+            
+            if (!status) {
+                showToast('Please enter a status!', '⚠️');
+                return;
+            }
+            
+            set(displayRef, {
+                status: status,
+                message: message,
+                lastUpdate: Date.now()
+            }).then(() => {
+                console.log('✓ Custom status updated:', status);
+                showToast(`Custom status set to ${status}`, '✓');
+                document.getElementById('customStatus').value = '';
+                document.getElementById('customMessage').value = '';
+            }).catch((error) => {
+                console.error('✗ Error updating custom status:', error);
+                showToast('Failed to update status', '✗');
+            });
+        };
+    </script>
+</body>
+</html>
