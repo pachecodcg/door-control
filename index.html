@@ -446,7 +446,7 @@
 
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
-        const displayRef = database.ref('displays/door1');
+        const displayRef = database.ref('doorDisplay');
         
         let selectedDuration = 0;
         let currentMode = 'automatic';
@@ -480,9 +480,7 @@
 
         function switchToAutomatic() {
             displayRef.update({
-                mode: 'automatic',
-                manualUntil: 0,
-                lastUpdate: Date.now()
+                mode: 'automatic'
             }).then(() => {
                 showToast('▶️', 'Switched to Automatic Mode');
             }).catch(error => {
@@ -498,12 +496,17 @@
         }
 
         function setQuickStatus(status, message) {
+            const manualData = {
+                status: message,
+                eventTitle: '',
+                startTime: '',
+                endTime: '',
+                nextAvailable: ''
+            };
+            
             displayRef.update({
                 mode: 'manual',
-                status: status,
-                message: message,
-                manualUntil: 0,
-                lastUpdate: Date.now()
+                manualData: manualData
             }).then(() => {
                 showToast('✅', message);
             }).catch(error => {
@@ -528,14 +531,38 @@
                 return;
             }
 
-            const manualUntil = selectedDuration === 0 ? 0 : Math.floor(Date.now() / 1000) + (selectedDuration * 60);
+            // Calculate end time if duration is set
+            let endTime = '';
+            let nextAvailable = '';
+            
+            if (selectedDuration > 0) {
+                const now = new Date();
+                const end = new Date(now.getTime() + selectedDuration * 60000);
+                
+                // Format as "3:00 PM"
+                endTime = end.toLocaleTimeString('en-US', { 
+                    hour: 'numeric', 
+                    minute: '2-digit',
+                    hour12: true 
+                });
+                nextAvailable = endTime;
+            }
+
+            const manualData = {
+                status: 'Busy',
+                eventTitle: message,
+                startTime: new Date().toLocaleTimeString('en-US', { 
+                    hour: 'numeric', 
+                    minute: '2-digit',
+                    hour12: true 
+                }),
+                endTime: endTime,
+                nextAvailable: nextAvailable
+            };
 
             displayRef.update({
                 mode: 'manual',
-                status: 'busy',
-                message: message,
-                manualUntil: manualUntil,
-                lastUpdate: Date.now()
+                manualData: manualData
             }).then(() => {
                 showToast('✅', 'Custom message set');
                 document.getElementById('customMessage').value = '';
